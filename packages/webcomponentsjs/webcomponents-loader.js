@@ -8,7 +8,7 @@
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
 
-(function() {
+(function () {
   'use strict';
 
   /**
@@ -77,21 +77,21 @@
 
   function runWhenLoadedFns() {
     allowUpgrades = false;
-    var fnsMap = whenLoadedFns.map(function(fn) {
+    var fnsMap = whenLoadedFns.map(function (fn) {
       return fn instanceof Function ? fn() : fn;
     });
     whenLoadedFns = [];
-    return Promise.all(fnsMap).then(function() {
+    return Promise.all(fnsMap).then(function () {
       allowUpgrades = true;
       flushFn && flushFn();
-    }).catch(function(err) {
+    }).catch(function (err) {
       console.error(err);
     });
   }
 
   window.WebComponents = window.WebComponents || {};
   window.WebComponents.ready = window.WebComponents.ready || false;
-  window.WebComponents.waitFor = window.WebComponents.waitFor || function(waitFn) {
+  window.WebComponents.waitFor = window.WebComponents.waitFor || function (waitFn) {
     if (!waitFn) {
       return;
     }
@@ -113,7 +113,7 @@
     polyfills.push('ce');
   }
 
-  var needsTemplate = (function() {
+  var needsTemplate = (function () {
     // no real <template> because no `content` property (IE and older browsers)
     var t = document.createElement('template');
     if (!('content' in t)) {
@@ -129,7 +129,7 @@
     t.content.appendChild(t2);
     var clone = t.cloneNode(true);
     return (clone.content.childNodes.length === 0 ||
-        clone.content.firstChild.content.childNodes.length === 0);
+      clone.content.firstChild.content.childNodes.length === 0);
   })();
 
   // NOTE: any browser that does not have template or ES6 features
@@ -146,7 +146,7 @@
     if (window.WebComponents.root) {
       url = window.WebComponents.root + polyfillFile;
     } else {
-      var script = document.querySelector('script[src*="' + name +'"]');
+      var script = document.querySelector('script[src*="' + name + '"]');
       // Load it from the right place.
       url = script.src.replace(name, polyfillFile);
     }
@@ -174,12 +174,17 @@
       polyfillsLoaded = true;
       fireEvent();
     } else {
-      // this script may come between DCL and load, so listen for both, and cancel load listener if DCL fires
-      window.addEventListener('load', ready);
-      window.addEventListener('DOMContentLoaded', function() {
-        window.removeEventListener('load', ready);
-        ready();
-      })
+      // if readyState is 'complete', script is loaded imperatively on a spec-compliant browser, so just fire WCR
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        polyfillsLoaded = true;
+        fireEvent();
+      } else {
+        document.addEventListener('readystatechange', event => {
+          if (event.target.readyState === 'interactive' || event.target.readyState === 'complete') {
+            ready();
+          }
+        });
+      }
     }
   }
 })();
